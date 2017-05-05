@@ -56,7 +56,7 @@ public:
    void push(const T &t) throw (const char *);
 
    //resize the Queue
-   void resize(int newSize) throw (const char *);
+   void resize() throw (const char *);
 
    // remove top item from the Queue
    void pop() throw (const char *);
@@ -212,40 +212,6 @@ Queue <T> :: Queue(int vCapacity) throw (const char *)
       data[i] = T();
 }
 
-/************************************************
-* Container :: assignment
-* Assign a value to a container
-*************************************************
-template <class T>
-<T> Queue <T>::&operator = (const Queue<T> &rhs) throw (const char*)
-{
-   try
-   {
-      this->data = new T[rhs.vCapacity];
-      this->vCapacity = rhs.vCapacity;
-      this->countIn = 0;
-      this->countOut = 0;
-
-      int x = rhs.locHead();
-      for (int i = 0; i < rhs.size(); i++)
-      {
-         if (x == rhs.vCapacity)
-         {
-            x = 0;
-         }
-         this->data[i] = rhs.data[x];
-         this->countIn++;
-         x++;
-      }
-   }
-   catch (std::bad_alloc)
-   {
-      throw "ERROR: Can not allocate buffer for new Queue";
-   }
-return *this;
-}
-*/
-
 /**************************************
 *  Queue :: POP
 *  remove the item on top of the Queue
@@ -267,49 +233,9 @@ void Queue<T> :: pop() throw (const char *)
 template <class T>
 void Queue <T> ::push(const T &t) throw (const char *)
 {
-   if (vCapacity == 0)
-   {
-      vCapacity = 1;
-      data = new T[vCapacity];
-   }
-
-   if (numItems() == vCapacity - 1) // was vCapacity - 1
-   {
-      resize(vCapacity * 2);
-//      this->vCapacity *= 2;
-      try
-      {
-         T * temp = new(std::nothrow) T[vCapacity];
-         int x = locHead();
-         countIn = 0;
-         countOut = 0;
-
-         for (int i = 0; i < numItems(); i++)
-         {
-            if (x == (vCapacity + 1))
-            {
-               x = 0;
-            }
-            temp[i] = data[x];
-            x++;
-            countIn++;
-         }
-
-         delete [] data;
-         data = temp;
-      }
-
-      catch(std::bad_alloc)
-      {
-         throw "Error: Cannot allocate buffer";
-      }
-   }
-
-   if (numItems() < vCapacity)
-   {
-      data[locTail()] = t;
-      countIn++;
-   }
+   resize();
+   data[locTail()] = t;
+   countIn++;
 }
 
 /**************************************
@@ -334,27 +260,34 @@ T & Queue <T> :: front() throw (const char *)
 * rewrite the Queue into a Queue of a larger size
 ***************************************/
 template <class T>
-void Queue <T> :: resize(int newSize) throw (const char *)
+void Queue <T> :: resize() throw (const char *)
 {
-   try
+   if (vCapacity == 0)
    {
-      vCapacity = newSize;
-      T * temp = new(std::nothrow) T[vCapacity];
-
-      for (int i = 0; i < numItems(); i++)
+      vCapacity = 1;
+      data = new T[vCapacity];
+   }
+   if (numItems() == vCapacity) // maybe vCapacity - 1
+   {
+      try
       {
-         temp[i] = data[i];
+         vCapacity = vCapacity * 2;
+         T * temp = new(std::nothrow) T[vCapacity];
+
+         for (int i = 0; i < numItems(); i++)
+         {
+            temp[i] = data[i];
+         }
+
+         delete [] data;
+         data = temp;
       }
 
-      delete [] data;
-      data = temp;
-   }
-
-   catch(std::bad_alloc)
-   {
-      throw "Error: Cannot allocate buffer";
+      catch(std::bad_alloc)
+      {
+         throw "Error: Cannot allocate buffer";
+      }
    }
 }
-
 
 #endif // Queue_H
