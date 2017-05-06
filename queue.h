@@ -40,7 +40,7 @@ public:
    ~Queue()        {if (vCapacity) delete [] data; }
 
    // is the container currently empty
-   bool empty() const   { return (countIn - countOut) == 0; }
+   bool empty() const { return numItems() == 0; }
 
    // remove all the items from the container
    void clear()         { countIn = 0; countOut = 0;        }
@@ -61,6 +61,9 @@ public:
    // remove top item from the Queue
    void pop() throw (const char *);
 
+   // return the item at the back of the Queue
+   T &back() throw (const char *);
+
    // overloaded assignment operator
    Queue <T> &operator = (const Queue<T> &rhs) throw (const char*)
    {
@@ -74,7 +77,7 @@ public:
          int x = rhs.locHead();
          for (int i = 0; i < rhs.size(); i++)
          {
-            if (x == (rhs.vCapacity + 1))
+            if (x == (rhs.vCapacity))
             {
                x = 0;
             }
@@ -92,13 +95,9 @@ public:
 
    // overloaded []
    T &operator[] (int index) throw (const char*)
-   {
-      return data[index];
-   }
+      { return data[index]; }
    const T &operator[] (int index) const throw (const char*)
-   {
-      return data[index];
-   }
+      { return data[index]; }
 
 private:
    T * data;          // dynamically allocated array of T
@@ -111,7 +110,7 @@ private:
       }
       else
       {
-         return (countIn -1) % vCapacity;
+         return (countOut % vCapacity);
       }
    } // the location of the head
 
@@ -123,7 +122,7 @@ private:
       }
       else
       {
-         return countOut % vCapacity;
+         return (countIn % vCapacity);
       }
    }     // the location of the tail
 
@@ -140,6 +139,8 @@ template <class T>
 Queue <T> :: Queue(const Queue <T> & rhs) throw (const char *)
 {
    assert(rhs.vCapacity >= 0);
+   this->countIn = 0;
+   this->countOut = 0;
 
    // do nothing if there is nothing to do
    if (rhs.vCapacity == 0)
@@ -159,22 +160,15 @@ Queue <T> :: Queue(const Queue <T> & rhs) throw (const char *)
       throw "ERROR: Unable to allocate buffer";
    }
 
-// copy over the capacity, size and counts (for head and tail locations)
-   countOut = rhs.countOut;
-   countIn = rhs.countIn;
+   // copy over the capacity, size and counts (for head and tail locations)
+   this->countOut = rhs.countOut;
+   this->countIn = rhs.countIn;
    assert(rhs.numItems() >= 0 && rhs.numItems() <= rhs.vCapacity);
    vCapacity = rhs.vCapacity;
-//   numItems() = rhs.numItems();
 
    // copy the items over one at a time using the assignment operator
    for (int i = 0; i < vCapacity; i++)
       data[i] = rhs.data[i];
-
-/*
-   // the rest needs to be filled with the default value for T
-   for (int i = numItems(); i < vCapacity; i++)
-      data[i] = T();
-      */
 }
 
 /**********************************************
@@ -221,7 +215,7 @@ void Queue<T> :: pop() throw (const char *)
 {
    if (numItems() == 0)
    {
-      throw "ERROR: Unable to pop from an empty Queue";
+      throw "ERROR: attempting to pop from an empty queue";
    }
    countOut++;
 }
@@ -231,7 +225,7 @@ void Queue<T> :: pop() throw (const char *)
 *  add a new item to the top of the Queue
 ***************************************/
 template <class T>
-void Queue <T> ::push(const T &t) throw (const char *)
+void Queue <T> :: push(const T &t) throw (const char *)
 {
    resize();
    data[locTail()] = t;
@@ -267,20 +261,29 @@ void Queue <T> :: resize() throw (const char *)
       vCapacity = 1;
       data = new T[vCapacity];
    }
-   if (numItems() == vCapacity) // maybe vCapacity - 1
+   if (numItems() == vCapacity)
    {
       try
       {
-         vCapacity = vCapacity * 2;
+         int x = locHead();
+         vCapacity *= 2;
          T * temp = new(std::nothrow) T[vCapacity];
 
          for (int i = 0; i < numItems(); i++)
          {
-            temp[i] = data[i];
+            if (x == (vCapacity / 2))
+            {
+               x = 0;
+            }
+            temp[i] = data[x];
+            x++;
          }
 
          delete [] data;
+
          data = temp;
+         countIn = numItems();
+         countOut = 0;
       }
 
       catch(std::bad_alloc)
@@ -289,5 +292,21 @@ void Queue <T> :: resize() throw (const char *)
       }
    }
 }
+
+/**************************************
+* QUEUE :: BACK
+* returns the item at the back of the Queue
+***************************************/
+template<class T>
+T &Queue <T> :: back() throw (const char *)
+{
+   if (this->empty())
+   {
+      throw "ERROR: attempting to access an item in an empty queue";
+   }
+   return this->data[locTail()];
+}
+
+
 
 #endif // Queue_H
